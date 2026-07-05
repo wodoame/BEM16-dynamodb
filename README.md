@@ -18,7 +18,8 @@ and IAM role assumed via GitHub OIDC (no static AWS keys stored in GitHub).
 
 `Environment` (`dev`/`prod`) is a stack parameter that namespaces the table name
 (`Music-dev` / `Music-prod`) and, in `prod`, additionally enables point-in-time
-recovery and switches the deletion policy to `Retain`.
+recovery. Both environments use `DeletionPolicy: Delete` — the table is removed
+if the stack or resource is deleted.
 
 Any other item attribute (e.g. `Year`, `Price`) can be added freely at insert time —
 DynamoDB only requires attributes that are used as table or index keys to be declared
