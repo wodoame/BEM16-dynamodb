@@ -10,6 +10,9 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  AWS_REGION: us-east-1
+
 concurrency:
   group: deploy-dev
   cancel-in-progress: false
@@ -32,7 +35,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.PIPELINE_EXECUTION_ROLE }}
-          aws-region: ${{ vars.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: SAM build
         run: sam build --template-file template.yaml
@@ -43,7 +46,7 @@ jobs:
             --stack-name music-table-dev \
             --s3-bucket "${{ vars.ARTIFACTS_BUCKET }}" \
             --s3-prefix music-table-dev \
-            --region "${{ vars.AWS_REGION }}" \
+            --region "${{ env.AWS_REGION }}" \
             --capabilities CAPABILITY_IAM \
             --role-arn "${{ secrets.CLOUDFORMATION_EXECUTION_ROLE }}" \
             --parameter-overrides Environment=dev \

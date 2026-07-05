@@ -81,7 +81,9 @@ In the GitHub repo: **Settings → Environments**, create two environments named
 `dev` and `production` (names must match the `environment:` key used in the two
 workflow files, and the `GitHubEnvironmentName` each role's trust policy was
 scoped to). In each, add the following — role ARNs as **Environment secrets**,
-region/bucket as **Environment variables** (they aren't sensitive):
+bucket name as an **Environment variable** (it isn't sensitive). The AWS region
+is hardcoded in each workflow's `env.AWS_REGION` rather than pulled from a
+variable.
 
 Optional but recommended: on the `production` environment, add required reviewers
 so prod deploys need manual approval before running.
