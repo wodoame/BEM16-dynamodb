@@ -1,0 +1,51 @@
+name: Deploy DynamoDB Table - Prod
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy (prod)
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.PIPELINE_EXECUTION_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: SAM build
+        run: sam build --template-file template.yaml
+
+      - name: SAM deploy (prod)
+        run: |
+          sam deploy \
+            --stack-name music-table-prod \
+            --s3-bucket "${{ vars.ARTIFACTS_BUCKET }}" \
+            --s3-prefix music-table-prod \
+            --region "${{ vars.AWS_REGION }}" \
+            --capabilities CAPABILITY_IAM \
+            --role-arn "${{ secrets.CLOUDFORMATION_EXECUTION_ROLE }}" \
+            --parameter-overrides Environment=prod \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset

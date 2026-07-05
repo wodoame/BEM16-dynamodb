@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Music DynamoDB table (On-Demand billing, Standard-Infrequent-Access class)
+  with two Global Secondary Indexes, parameterized for dev/prod environments.
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Default: dev
+    Description: Deployment environment name, used to namespace resources.
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  MusicTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: !If [IsProd, Retain, Delete]
+    UpdateReplacePolicy: !If [IsProd, Retain, Delete]
+    Properties:
+      TableName: !Sub "Music-${Environment}"
+      BillingMode: PAY_PER_REQUEST
+      TableClass: STANDARD_INFREQUENT_ACCESS
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      AttributeDefinitions:
+        - AttributeName: Artist
+          AttributeType: S
+        - AttributeName: Song
+          AttributeType: S
+        - AttributeName: Album
+          AttributeType: S
+        - AttributeName: Genre
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Artist
+          KeyType: HASH
+        - AttributeName: Song
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: Album-Index
+          KeySchema:
+            - AttributeName: Album
+              KeyType: HASH
+            - AttributeName: Song
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: Genre-Index
+          KeySchema:
+            - AttributeName: Genre
+              KeyType: HASH
+            - AttributeName: Artist
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+
+Outputs:
+  TableName:
+    Description: Name of the deployed Music DynamoDB table
+    Value: !Ref MusicTable
+  TableArn:
+    Description: ARN of the deployed Music DynamoDB table
+    Value: !GetAtt MusicTable.Arn

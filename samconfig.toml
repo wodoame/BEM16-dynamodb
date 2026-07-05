@@ -1,0 +1,24 @@
+version = 0.1
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+resolve_s3 = false
+
+[dev.deploy.parameters]
+stack_name = "music-table-dev"
+region = "us-east-1"
+s3_bucket = "music-table-artifacts-dev-205930639565"
+s3_prefix = "music-table-dev"
+parameter_overrides = "Environment=dev"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
+
+[prod.deploy.parameters]
+stack_name = "music-table-prod"
+region = "us-east-1"
+s3_bucket = "music-table-artifacts-prod-205930639565"
+s3_prefix = "music-table-prod"
+parameter_overrides = "Environment=prod"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = false
