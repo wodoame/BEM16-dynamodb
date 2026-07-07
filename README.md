@@ -12,7 +12,7 @@ and IAM role assumed via GitHub OIDC (no static AWS keys stored in GitHub).
 | Sort key | `Song` (String) |
 | Additional attributes | `Album` (String), `Genre` (String) |
 | GSI 1 | `Album-Index` — HASH `Album`, RANGE `Song` |
-| GSI 2 | `Genre-Index` — HASH `Genre`, RANGE `Artist` |
+| GSI 2 | `Song-Index` — HASH `Song`, RANGE `Artist` |
 | Billing mode | `PAY_PER_REQUEST` (On-Demand) |
 | Table class | `STANDARD_INFREQUENT_ACCESS` (non-default) |
 
@@ -122,4 +122,6 @@ auto-generated multi-stage workflow.
 
 4. Query the base table by `Artist` (+ optional `Song`).
 5. Under **Indexes**, select `Album-Index` and query by `Album` (e.g. all
-   songs on *Tragic Kingdom*), then select `Genre-Index` and query by `Genre`.
+   songs on *Tragic Kingdom*), then select `Song-Index` and query by `Song`
+   (e.g. find every artist with a song called *Just a Girl*, without knowing
+   the artist up front).

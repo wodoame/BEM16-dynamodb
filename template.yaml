@@ -36,8 +36,6 @@ Resources:
           AttributeType: S
         - AttributeName: Album
           AttributeType: S
-        - AttributeName: Genre
-          AttributeType: S
       KeySchema:
         - AttributeName: Artist
           KeyType: HASH
@@ -52,9 +50,9 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-        - IndexName: Genre-Index
+        - IndexName: Song-Index
           KeySchema:
-            - AttributeName: Genre
+            - AttributeName: Song
               KeyType: HASH
             - AttributeName: Artist
               KeyType: RANGE
