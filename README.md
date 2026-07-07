@@ -36,16 +36,18 @@ in the schema.
 ### 2. Bootstrap per-environment pipeline resources
 
 Instead of the generic `sam pipeline bootstrap` CLI (which auto-generates
-hard-to-read resource names), this repo has two hand-written CloudFormation
+hard-to-read resource names), this repo has hand-written CloudFormation
 templates under `pipeline/` that create the same category of resources with
 **dedicated, easy-to-remember names per environment**:
 
 - `pipeline/oidc-provider.yaml` — the GitHub Actions OIDC identity provider.
   Account-wide; deploy **once**.
-- `pipeline/pipeline-resources.yaml` — per stage: a dedicated S3 artifacts
-  bucket, a `CloudFormationExecutionRole` scoped to only the `Music-<env>`
-  table, and a `DeployerRole` trusted via OIDC and scoped to only that
-  stage's stack + bucket. Deploy **once per stage** (`dev`, `prod`).
+- `pipeline/pipeline-resources-dev.yaml` / `pipeline/pipeline-resources-prod.yaml`
+  — one file per stage (not a single template parameterized by environment),
+  so dev and prod can diverge independently without conditionals. Each creates
+  a dedicated S3 artifacts bucket, a `CloudFormationExecutionRole` scoped to
+  only that stage's `Music-<env>` table, and a `DeployerRole` trusted via OIDC
+  and scoped to only that stage's stack + bucket. Deploy **once per stage**.
 
 ```bash
 # One-time, account-wide
@@ -59,19 +61,21 @@ OIDC_ARN=$(aws cloudformation describe-stacks --stack-name music-table-oidc-prov
 
 # Per stage
 aws cloudformation deploy \
-  --template-file pipeline/pipeline-resources.yaml \
+  --template-file pipeline/pipeline-resources-dev.yaml \
   --stack-name music-table-pipeline-dev \
   --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides Environment=dev GitHubOrg=<org> GitHubRepo=<repo> \
-    GitHubEnvironmentName=dev OidcProviderArn="$OIDC_ARN"
+  --parameter-overrides GitHubOrg=<org> GitHubRepo=<repo> OidcProviderArn="$OIDC_ARN"
 
 aws cloudformation deploy \
-  --template-file pipeline/pipeline-resources.yaml \
+  --template-file pipeline/pipeline-resources-prod.yaml \
   --stack-name music-table-pipeline-prod \
   --capabilities CAPABILITY_NAMED_IAM \
-  --parameter-overrides Environment=prod GitHubOrg=<org> GitHubRepo=<repo> \
-    GitHubEnvironmentName=production OidcProviderArn="$OIDC_ARN"
+  --parameter-overrides GitHubOrg=<org> GitHubRepo=<repo> OidcProviderArn="$OIDC_ARN"
 ```
+`GitHubEnvironmentName` defaults to `dev`/`production` in each file respectively,
+matching the `environment:` key in `deploy-dev.yml`/`deploy-prod.yml` — only
+override it if you rename those.
+
 If you fork this repo or move to a different AWS account, re-run the commands
 above with your own `GitHubOrg`/`GitHubRepo` and read the new values with
 `aws cloudformation describe-stacks --stack-name music-table-pipeline-<env> --query "Stacks[0].Outputs"`.
