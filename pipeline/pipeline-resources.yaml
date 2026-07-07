@@ -1,11 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Prod pipeline resources for the Music table SAM deployments: a dedicated
-  artifacts bucket, a CloudFormation execution role scoped to just the
-  Music-prod table, and a GitHub-OIDC-trusted deployer role scoped to just
-  this stack and bucket.
+  Per-environment pipeline resources for the Music table SAM deployments:
+  a dedicated artifacts bucket, a CloudFormation execution role scoped to just
+  the Music table, and a GitHub-OIDC-trusted deployer role scoped to just this
+  environment's stack and bucket. Deploy once per stage (dev, prod).
 
 Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
   GitHubOrg:
     Type: String
     Description: GitHub organization or username that owns the repo
@@ -14,10 +19,9 @@ Parameters:
     Description: GitHub repository name (without owner)
   GitHubEnvironmentName:
     Type: String
-    Default: production
     Description: >
-      Name of the GitHub Environment used by the prod workflow
-      (must match the `environment:` key in deploy-prod.yml)
+      Name of the GitHub Environment used by this stage's workflow
+      (must match the `environment:` key, e.g. dev or production)
   OidcProviderArn:
     Type: String
     Description: ARN of the GitHub OIDC provider (output of oidc-provider.yaml)
@@ -26,7 +30,7 @@ Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "music-table-artifacts-prod-${AWS::AccountId}"
+      BucketName: !Sub "music-table-artifacts-${Environment}-${AWS::AccountId}"
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
@@ -42,7 +46,7 @@ Resources:
   CloudFormationExecutionRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: music-table-cfn-role-prod
+      RoleName: !Sub "music-table-cfn-role-${Environment}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -67,8 +71,8 @@ Resources:
                   - dynamodb:DescribeContinuousBackups
                   - dynamodb:UpdateContinuousBackups
                 Resource:
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Music-prod"
-                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Music-prod/index/*"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Music-${Environment}"
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/Music-${Environment}/index/*"
               - Effect: Allow
                 Action:
                   - cloudformation:CreateChangeSet
@@ -78,7 +82,7 @@ Resources:
   DeployerRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: music-table-deploy-role-prod
+      RoleName: !Sub "music-table-deploy-role-${Environment}"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -108,7 +112,7 @@ Resources:
                   - cloudformation:ListStackResources
                   - cloudformation:GetTemplate
                 Resource:
-                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/music-table-prod/*"
+                  - !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/music-table-${Environment}/*"
               - Effect: Allow
                 Action:
                   - cloudformation:GetTemplateSummary
@@ -132,11 +136,11 @@ Resources:
 
 Outputs:
   ArtifactsBucketName:
-    Description: Dedicated S3 artifacts bucket for prod
+    Description: Dedicated S3 artifacts bucket for this environment
     Value: !Ref ArtifactsBucket
   CloudFormationExecutionRoleArn:
-    Description: Role CloudFormation assumes to create/update the Music-prod table
+    Description: Role CloudFormation assumes to create/update the Music table
     Value: !GetAtt CloudFormationExecutionRole.Arn
   DeployerRoleArn:
-    Description: Role GitHub Actions assumes via OIDC to run sam deploy for prod
+    Description: Role GitHub Actions assumes via OIDC to run sam deploy
     Value: !GetAtt DeployerRole.Arn
