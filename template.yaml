@@ -50,6 +50,14 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
+        - IndexName: Song-Index
+          KeySchema:
+            - AttributeName: Song
+              KeyType: HASH
+            - AttributeName: Artist
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
       Tags:
         - Key: Environment
           Value: !Ref Environment
